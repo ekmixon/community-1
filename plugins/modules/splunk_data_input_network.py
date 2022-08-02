@@ -158,16 +158,14 @@ def main():
 
     if module.params['state'] in ['present', 'enabled', 'disabled']:
         _data = splunk_request.get_data()
-        if module.params['state'] in ['present', 'enabled']:
-            _data['disabled'] = False
-        else:
-            _data['disabled'] = True
+        _data['disabled'] = module.params['state'] not in ['present', 'enabled']
         if query_dict:
             needs_change = False
             for arg in request_data:
-                if arg in query_dict['entry'][0]['content']:
-                    if to_text(query_dict['entry'][0]['content'][arg]) != to_text(request_data[arg]):
-                        needs_change = True
+                if arg in query_dict['entry'][0]['content'] and to_text(
+                    query_dict['entry'][0]['content'][arg]
+                ) != to_text(request_data[arg]):
+                    needs_change = True
             if not needs_change:
                 module.exit_json(changed=False, msg="Nothing to do.", splunk_data=query_dict)
             if module.check_mode and needs_change:

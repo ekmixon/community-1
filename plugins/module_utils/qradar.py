@@ -15,11 +15,14 @@ import json
 
 
 def find_dict_in_list(some_list, key, value):
-    for some_dict in some_list:
-        if key in some_dict:
-            if some_dict[key] == value:
-                return some_dict, some_list.index(some_dict)
-    return None
+    return next(
+        (
+            (some_dict, some_list.index(some_dict))
+            for some_dict in some_list
+            if key in some_dict and some_dict[key] == value
+        ),
+        None,
+    )
 
 
 class QRadarRequest(object):
@@ -48,23 +51,24 @@ class QRadarRequest(object):
         except ValueError as e:
             self.module.fail_json(msg="certificate not found: {0}".format(e))
 
-        if code == 404:
-            if to_text('Object not found') in to_text(response) \
-                    or to_text('Could not find object') in to_text(response) \
-                    or to_text('No offense was found') in to_text(response):
-                return {}
+        if code == 404 and (
+            to_text('Object not found') in to_text(response)
+            or to_text('Could not find object') in to_text(response)
+            or to_text('No offense was found') in to_text(response)
+        ):
+            return {}
 
-        if code == 409:
-            if 'code' in response:
-                if response['code'] in [1002, 1004]:
-                    # https://www.ibm.com/support/knowledgecenter/SS42VS_7.3.1/com.ibm.qradar.doc/9.2--staged_config-deploy_status-POST.html
-                    # Documentation says we should get 1002, but I'm getting 1004 from QRadar
-                    return response
-                else:
-                    self.module.fail_json(msg='qradar httpapi returned error {0} with message {1}'.format(code, response))
-        elif not (code >= 200 and code < 300):
+        if code == 409 and 'code' in response and response['code'] in [1002, 1004]:
+            # https://www.ibm.com/support/knowledgecenter/SS42VS_7.3.1/com.ibm.qradar.doc/9.2--staged_config-deploy_status-POST.html
+            # Documentation says we should get 1002, but I'm getting 1004 from QRadar
+            return response
+        elif (
+            code == 409
+            and 'code' in response
+            or code != 409
+            and (code < 200 or code >= 300)
+        ):
             self.module.fail_json(msg='qradar httpapi returned error {0} with message {1}'.format(code, response))
-
         return response
 
     def get(self, url, **kwargs):
@@ -92,11 +96,13 @@ class QRadarRequest(object):
             - the key does not exist in the not_data_keys list
         """
         try:
-            qradar_data = {}
-            for param in self.module.params:
-                if (self.module.params[param]) != None and (param not in self.not_rest_data_keys):
-                    qradar_data[param] = self.module.params[param]
-            return qradar_data
+            return {
+                param: self.module.params[param]
+                for param in self.module.params
+                if (self.module.params[param]) != None
+                and (param not in self.not_rest_data_keys)
+            }
+
 
 
         except TypeError as e:
@@ -122,7 +128,7 @@ class QRadarRequest(object):
         """
         POST with data to path
         """
-        if data == None:
+        if data is None:
             data = json.dumps(self.get_data())
         elif data == False:
             # Because for some reason some QRadar REST API endpoint use the
@@ -134,7 +140,7 @@ class QRadarRequest(object):
         """
         Create or Update a file/directory monitor data input in qradar
         """
-        if data == None:
+        if data is None:
             data = json.dumps(self.get_data())
         #return self.post("/{0}".format(rest_path), payload=data)
         return self.patch("/{0}".format(rest_path), payload=data) # PATCH

@@ -86,12 +86,11 @@ import json
 
 def set_offense_values(module, qradar_request):
     if module.params['closing_reason']:
-        found_closing_reason = qradar_request.get_by_path(
+        if found_closing_reason := qradar_request.get_by_path(
             'api/siem/offense_closing_reasons?filter={0}'.format(
                 quote('text="{0}"'.format(module.params['closing_reason']))
             )
-        )
-        if found_closing_reason:
+        ):
             module.params['closing_reason_id'] = found_closing_reason[0]['id']
         else:
             module.fail_json('Unable to find closing_reason text: {0}'.format(module.params['closing_reason']))
@@ -139,13 +138,9 @@ def main():
         not_rest_data_keys=['name', 'id', 'assigned_to', 'closing_reason']
     )
 
-    #if module.params['name']:
-    #    # FIXME - QUERY HERE BY NAME
-    #    found_offense = qradar_request.get_by_path('api/siem/offenses?filter={0}'.format(module.params['name']))
-
-    found_offense = qradar_request.get_by_path('api/siem/offenses/{0}'.format(module.params['id']))
-
-    if found_offense:
+    if found_offense := qradar_request.get_by_path(
+        'api/siem/offenses/{0}'.format(module.params['id'])
+    ):
         set_offense_values(module, qradar_request)
 
         post_strs = []

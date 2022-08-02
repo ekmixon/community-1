@@ -141,14 +141,11 @@ def main():
         not_rest_data_keys=['state', 'type_name', 'identifier']
     )
 
-    log_source_exists = qradar_request.get_by_path(
-            'api/config/event_sources/log_source_management/log_sources?filter={0}'.format(
-                quote('name="{0}"'.format(module.params['name']))
+    if log_source_exists := qradar_request.get_by_path(
+        'api/config/event_sources/log_source_management/log_sources?filter={0}'.format(
+            quote('name="{0}"'.format(module.params['name']))
         )
-    )
-
-    if log_source_exists:
-
+    ):
         if module.params['state'] == 'present':
             existing_log_source_protocol_identifier, _elspi_index = find_dict_in_list(
                 log_source_exists[0]['protocol_parameters'],

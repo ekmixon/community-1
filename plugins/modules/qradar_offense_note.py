@@ -64,12 +64,11 @@ import json
 
 def set_offense_values(module, qradar_request):
     if module.params['closing_reason']:
-        found_closing_reason = qradar_request.get_by_path(
+        if found_closing_reason := qradar_request.get_by_path(
             'api/siem/offense_closing_reasons?filter={0}'.format(
                 quote('text="{0}"'.format(module.params['closing_reason']))
             )
-        )
-        if found_closing_reason:
+        ):
             module.params['closing_reason_id'] = found_closing_reason[0]['id']
         else:
             module.fail_json('Unable to find closing_reason text: {0}'.format(module.params['closing_reason']))
@@ -97,21 +96,12 @@ def main():
         not_rest_data_keys=['state', 'offense_id']
     )
 
-    #if module.params['name']:
-    #    # FIXME - QUERY HERE BY NAME
-    #    found_offense = qradar_request.get_by_path('api/siem/offenses?filter={0}'.format(module.params['name']))
-    # FIXME - once this is sorted, add it to module_utils
-
-    found_notes = qradar_request.get_by_path(
+    if found_notes := qradar_request.get_by_path(
         'api/siem/offenses/{0}/notes?filter={1}'.format(
             module.params['offense_id'],
             quote('note_text="{0}"'.format(module.params['note_text'])),
         )
-    )
-
-    #if module.params['state'] == 'present':
-
-    if found_notes:
+    ):
         # The note we want exists either by ID or by text name, verify
 
         note = found_notes[0]

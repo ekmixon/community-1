@@ -81,8 +81,7 @@ def traverse_rules_file_dirs(somepath):
 
     for d in dirs_in_somepath:
         return glob.glob(os.path.join(somepath, "*.rules")) + traverse_rules_file_dirs(os.path.join(somepath,d))
-    else:
-        return glob.glob(os.path.join(somepath, "*.rules"))
+    return glob.glob(os.path.join(somepath, "*.rules"))
 
 def main():
     module = AnsibleModule(

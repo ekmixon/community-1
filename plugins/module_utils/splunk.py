@@ -23,13 +23,14 @@ def parse_splunk_args(module):
             Required by the module and are set to default=None
     """
     try:
-        splunk_data = {}
-        for argspec in module.argument_spec:
-            if "default" in module.argument_spec[argspec] \
-                    and module.argument_spec[argspec]["default"] is None \
-                    and module.params[argspec] is not None:
-                splunk_data[argspec] = module.params[argspec]
-        return splunk_data
+        return {
+            argspec: module.params[argspec]
+            for argspec in module.argument_spec
+            if "default" in module.argument_spec[argspec]
+            and module.argument_spec[argspec]["default"] is None
+            and module.params[argspec] is not None
+        }
+
     except TypeError as e:
         module.fail_json(msg="Invalid data type provided for splunk module_util.parse_splunk_args: {0}".format(e))
 
@@ -60,12 +61,13 @@ class SplunkRequest(object):
         except ValueError as e:
             self.module.fail_json(msg="certificate not found: {0}".format(e))
 
-        if code == 404:
-            if to_text(u'Object not found') in to_text(response) \
-                    or to_text(u'Could not find object') in to_text(response):
-                return {}
+        if code == 404 and (
+            to_text(u'Object not found') in to_text(response)
+            or to_text(u'Could not find object') in to_text(response)
+        ):
+            return {}
 
-        if not (code >= 200 and code < 300):
+        if code < 200 or code >= 300:
             self.module.fail_json(msg='Splunk httpapi returned error {0} with message {1}'.format(code, response))
 
         return response
@@ -126,7 +128,7 @@ class SplunkRequest(object):
         """
         Create or Update a file/directory monitor data input in Splunk
         """
-        if data == None:
+        if data is None:
             data = self.get_urlencoded_data()
         return self.post("/{0}?output_mode=json".format(rest_path), payload=data)
 

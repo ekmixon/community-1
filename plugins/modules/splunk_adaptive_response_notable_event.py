@@ -263,9 +263,10 @@ def main():
     if module.params['state'] == 'present':
         needs_change = False
         for arg in request_post_data:
-            if arg in query_dict['entry'][0]['content']:
-                if to_text(query_dict['entry'][0]['content'][arg]) != to_text(request_post_data[arg]):
-                    needs_change = True
+            if arg in query_dict['entry'][0]['content'] and to_text(
+                query_dict['entry'][0]['content'][arg]
+            ) != to_text(request_post_data[arg]):
+                needs_change = True
         if not needs_change:
             module.exit_json(changed=False, msg="Nothing to do.", splunk_data=query_dict)
         if module.check_mode and needs_change:

@@ -49,7 +49,9 @@ class HttpApi(HttpApiBase):
             return e.code, error
 
     def _display_request(self, request_method):
-        self.connection.queue_message('vvvv', 'Web Services: %s %s' % (request_method, self.connection._url))
+        self.connection.queue_message(
+            'vvvv', f'Web Services: {request_method} {self.connection._url}'
+        )
 
     def _get_response_value(self, response_data):
         return to_text(response_data.getvalue())
@@ -57,6 +59,5 @@ class HttpApi(HttpApiBase):
     def _response_to_json(self, response_text):
         try:
             return json.loads(response_text) if response_text else {}
-        # JSONDecodeError only available on Python 3.5+
         except ValueError:
-            raise ConnectionError('Invalid JSON response: %s' % response_text)
+            raise ConnectionError(f'Invalid JSON response: {response_text}')
